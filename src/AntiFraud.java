@@ -46,25 +46,58 @@ public class AntiFraud {
 		//System.out.println("Start stream file");
 		readStreamFile(streamFile);
 		//System.out.println("Done stream file");
-		predictResult(1, output1);
-		predictResult(2, output2);
-		predictResult(4, output3);
+		predictResult(output1, output2, output3);
 	}
 	
-	private static void predictResult(int level, String fileName){
-		List<String> record = new ArrayList<String>();
+	private static void predictResult(String output1, String output2, String output3){
+		List<String> record1 = new ArrayList<String>();
+		List<String> record2 = new ArrayList<String>();
+		List<String> record3 = new ArrayList<String>();
 		for(Transact item : toTest){
-			record.add(breadthFirstSearch(item.src, item.dest, level)? "trusted\n" : "unverified\n");
+			int ans = breadthFirstSearch(item.src, item.dest);
+			//System.out.println(ans);
+			if(ans == 1){
+				record1.add("trusted\n");
+				record2.add("trusted\n");
+				record3.add("trusted\n");
+			}else if(ans == 2){
+				record1.add("unverified\n");
+				record2.add("trusted\n");
+				record3.add("trusted\n");
+			}else if(ans > 0 && ans < 5){
+				record1.add("unverified\n");
+				record2.add("unverified\n");
+				record3.add("trusted\n");
+			}else{
+				record1.add("unverified\n");
+				record2.add("unverified\n");
+				record3.add("unverified\n");
+			}
 		}
-		try(BufferedWriter br = new BufferedWriter(new FileWriter(fileName))){
-			for(String s : record){
+		try(BufferedWriter br = new BufferedWriter(new FileWriter(output1))){
+			for(String s : record1){
 				br.write(s);
 			}
 		    br.close();
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-	    
+		try(BufferedWriter br = new BufferedWriter(new FileWriter(output2))){
+			for(String s : record2){
+				br.write(s);
+			}
+		    br.close();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		try(BufferedWriter br = new BufferedWriter(new FileWriter(output3))){
+			for(String s : record3){
+				br.write(s);
+			}
+		    br.close();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 
 	private static void constructGraph(String fileName) {
@@ -131,25 +164,26 @@ public class AntiFraud {
 		}
 	}
 	
-	private static boolean breadthFirstSearch(long src, long dest, int level){
+	private static int breadthFirstSearch(long src, long dest){
+		int level = 0;
 		Deque<Long> queue = new ArrayDeque<>();
 		Deque<Long> nextQueue = new ArrayDeque<>();
 		queue.offer(src);
-		while(!queue.isEmpty() && level >= 0){
+		while(!queue.isEmpty() && level < 5){
 			long top = queue.remove();
-			if(dest == top) return true;
+			if(dest == top) return level;
 			Set<Long> neighbor = neighbors.get(top);
-			if(neighbor == null) return true;
+			if(neighbor == null) return -1;
 			for(long n : neighbor){
 				nextQueue.offer(n);
 			}
 			
 			if(queue.isEmpty()){
-				level -= 1;
+				level += 1;
 				queue = nextQueue;
 				nextQueue = new ArrayDeque<>();
 			}
 		}
-		return false;
+		return -1;
 	}
 }
